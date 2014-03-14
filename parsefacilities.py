@@ -27,19 +27,24 @@ def addToDB(cursor, details):
 
 		cursor.execute("SELECT * FROM facilities WHERE id=?;", (details['FacilityMasterID'],))
 
-		if True or cursor.fetchone() is None:
+		if cursor.fetchone() is None:
 			print str.format("{FacilityName}: {SiteStreet}, {SiteCity}", **details )
-
+			cursor.execute('''
+			INSERT INTO facilities (id, name, lastupdate, creation, firstseen, lastseen)
+				VALUES ( ?, ?, ?, ?, ?, ? );''', 
+				(details['FacilityMasterID'], 
+				details['FacilityName'], 
+				details['LastUpdateDateTime'],
+				details['CreationDateTime'],
+				datetime.datetime.now(),
+				datetime.datetime.now()))
+			
+		else:
+			print "Updating time on {}".format( details['FacilityName'])
+			cursor.execute( "UPDATE facilities SET lastseen = ? WHERE id = ?;", 
+				( datetime.datetime.now(), 
+					details['FacilityMasterID']) )
     
-	cursor.execute('''
-	INSERT OR REPLACE INTO facilities (id, name, lastupdate, creation, firstseen, lastseen)
-		VALUES ( ?, ?, ?, ?, ?, ? );''', 
-		(details['FacilityMasterID'], 
-		details['FacilityName'], 
-		details['LastUpdateDateTime'],
-		details['CreationDateTime'],
-		datetime.datetime.now(),
-		datetime.datetime.now()))
 	
 def createDB( cursor):
 	cursor.execute("CREATE TABLE facilities (id, name, lastupdate, creation, firstseen, lastseen);")
