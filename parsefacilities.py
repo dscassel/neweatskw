@@ -28,7 +28,7 @@ def addToDB(cursor, details):
 		cursor.execute("SELECT * FROM facilities WHERE id=?;", (details['FacilityMasterID'],))
 
 		if True or cursor.fetchone() is None:
-			print str.vformat("{FacilityName}: {SiteStreet}, {SiteCity}", details )
+			print str.format("{FacilityName}: {SiteStreet}, {SiteCity}", **details )
 
     
 	cursor.execute('''
