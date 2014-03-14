@@ -20,7 +20,7 @@ def getFacilities():
 		yield details
 
 
-def doDBStuff(cursor, details):
+def addToDB(cursor, details):
 
 	if details['CategoryStyle'] in ('Restaurant', 'Food Take Out') \
 		and details['SiteCity'] in ('WATERLOO', 'KITCHENER', 'ST.+JACOBS'):
@@ -70,7 +70,7 @@ def main():
 		tryUpgradeDB( cursor )
 
 	for facility in getFacilities():
-		doDBStuff( cursor, facility )
+		addToDB( cursor, facility )
 	db.commit()
 	db.close()
 		
