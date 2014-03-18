@@ -5,13 +5,11 @@ import datetime
 class DBTests( unittest.TestCase ):
 	def setUp(self):
 		self.details = { 
-			'FacilityMasterID': 'someID', 
-			'FacilityName': 'Test facility',
-			'LastUpdateDateTime': 'today',
-			'CreationDateTime': 'yesterday',
-			'CategoryStyle': 'Restaurant',
-			'SiteCity': 'WATERLOO',
-			'SiteStreet': "Dunsford" }
+			'ID': 'someID', 
+			'Name': 'Test facility',
+			'Type': 'Food, General: Restaurant',
+			'City': 'WATERLOO',
+			'Address': "123 King St E" }
 
 		self.cursor = Mock()
 		self.cursor.execute = Mock()
@@ -29,9 +27,9 @@ class DBTests( unittest.TestCase ):
 		expected_calls = [
 			call("SELECT * FROM facilities WHERE id=?;", ('someID',)),
 			call('''
-			INSERT INTO facilities (id, name, lastupdate, creation, firstseen, lastseen)
-				VALUES ( ?, ?, ?, ?, ?, ? );''', 
-				('someID', 'Test facility', 'today', 'yesterday', default_date, default_date))]
+			INSERT INTO facilities (id, name, lastupdate, creation, address)
+				VALUES ( ?, ?, ?, ?, ? );''', 
+				('someID', 'Test facility', default_date, default_date, '123 King St E'))]
 
 		self.cursor.execute.assert_has_calls( expected_calls )
 		
@@ -47,20 +45,20 @@ class DBTests( unittest.TestCase ):
 
 		expected_calls = [
 			call("SELECT * FROM facilities WHERE id=?;", ('someID',)),
-			call("UPDATE facilities SET lastseen = ? WHERE id = ?;", (default_date, 'someID' ) )
+			call("UPDATE facilities SET lastupdate = ? WHERE id = ?;", (default_date, 'someID' ) )
 		]
 
 		self.cursor.execute.assert_has_calls( expected_calls )
 
 	def test_outofcity( self ):
-		self.details['SiteCity'] = 'Auckland'
+		self.details['City'] = 'Auckland'
 		parsefacilities.addToDB( self.cursor, self.details )
 
 		self.assertEqual( 0, self.cursor.fetchone.call_count )
 		self.assertEqual( 0, self.cursor.execute.call_count )
 
 	def test_notrestaurant( self ):
-		self.details['CategoryStyle'] = 'Dentist'
+		self.details['Type'] = 'Dentist'
 		parsefacilities.addToDB( self.cursor, self.details )
 
 		self.assertEqual( 0, self.cursor.fetchone.call_count )
