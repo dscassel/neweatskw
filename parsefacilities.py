@@ -5,11 +5,11 @@ import sqlite3
 import os
 import datetime
 from collections import namedtuple
+import urllib
+import json
 
-Facility = namedtuple('Facility', ['ID', 'Name', 'LastUpdate', 'Created', 'Address'] )
 
-def getColStrings( tr ):
-	return tuple( col.string for col in tr.find_all("td") )
+Facility = namedtuple('Facility', ['ID', 'Name', 'LastUpdate', 'Created', 'Address', 'City'] )
 
 def getFacilities(datasource):
 	facilities = csv.DictReader(datasource)
@@ -36,13 +36,14 @@ def addToDB(cursor, details):
 		if cursor.fetchone() is None:
 			print str.format("{Name}: {Address}, {City}", **details )
 			cursor.execute('''
-			INSERT INTO facilities (id, name, lastupdate, creation, address)
-				VALUES ( ?, ?, ?, ?, ? );''', 
+			INSERT INTO facilities (id, name, lastupdate, creation, address, city)
+				VALUES ( ?, ?, ?, ?, ?, ? );''', 
 				(details['ID'], 
 				details['Name'], 
 				datetime.datetime.now(),
 				datetime.datetime.now(),
-				details['Address']))
+				details['Address'],
+				details['City']))
 			
 		else:
 			print "Updating time on {}".format( details['Name'])
@@ -52,9 +53,10 @@ def addToDB(cursor, details):
     
 	
 def createDB( cursor):
-	cursor.execute("CREATE TABLE facilities (id, name, lastupdate, creation );")
+	cursor.execute("CREATE TABLE facilities (id, name, lastupdate, creation, address, city );")
 	cursor.execute("CREATE TABLE settings (key, value);")
-	cursor.execute("INSERT INTO settings VALUES ('version', 1);")
+	cursor.execute("CREATE TABLE locations (city, address, latitude, longitude );")
+	cursor.execute("INSERT INTO settings VALUES ('version', 2);")
 
 
 def tryUpgradeDB( cursor ):
@@ -71,16 +73,18 @@ def tryUpgradeDB( cursor ):
 	if version == 0:
 		print ("Original database detected; upgrading")
 		cursor.execute("CREATE TABLE settings (key, value);")
-		cursor.execute("INSERT INTO settings VALUES ('version', 1);")
+		cursor.execute("INSERT INTO settings VALUES ('version', 2);")
 		cursor.execute("ALTER TABLE facilities ADD COLUMN address;")
+		cursor.execute("ALTER TABLE facilities ADD COLUMN city;")
 	elif version == 1:
-		cursor.execute("""f
+		cursor.execute("""
 CREATE TABLE facilities_new AS 
-	SELECT id, name, lastseen as lastupdate, firstseen as creation, NULL as address FROM facilities;""")
+	SELECT id, name, lastseen as lastupdate, firstseen as creation, NULL as address, NULL as city FROM facilities;""")
 		cursor.execute("DROP TABLE facilities;")
 		cursor.execute("ALTER TABLE facilities_new RENAME TO facilities;")
 		cursor.execute("UPDATE settings SET value = 2 WHERE key = 'version';")
-
+	if version < 2:
+		cursor.execute("CREATE TABLE locations (city, address, latitude, longitude );")
 
 
 def getRecent( cursor, ndays = 7 ):
@@ -88,6 +92,22 @@ def getRecent( cursor, ndays = 7 ):
 	for row in cursor.fetchall():
 		yield Facility( *row )
 
+def getLocation( cursor, address, city ):
+	cursor.execute("SELECT latitude, longitude FROM locations WHERE city = ? AND address = ?", (city, address) )
+	row = cursor.fetchone()
+	if row is None:
+		# We don't have a location for this address; look one up via Google
+		fulladdress = "{address}, {city}, Ontario, Canada".format( address=address, city=city)
+		rawdata = urllib.urlopen( 
+			"http://maps.googleapis.com/maps/api/geocode/json?address={}&sensor=false".format( 
+				urllib.quote( fulladdress ) ) ).read()
+		data = json.loads( rawdata )
+		location = data['results'][0]['geometry']['location']
+		lat, lng = location['lat'], location['lng']
+		cursor.execute("INSERT INTO locations (city, address, latitude, longitude) VALUES (?,?,?,?);",
+			(city, address, lat, lng))
+		return lat, lng
+	return row
 
 def main():
 	import argparse
@@ -117,7 +137,11 @@ def main():
 	db.commit()
 
 	if args.getrecent:
-		print list( getRecent( cursor, args.getrecent ) )
+		for result in getRecent( cursor, args.getrecent ):
+			print "{name}: {address}, {city} ({loc})".format( 
+				name=result.Name, address=result.Address, city=result.City, 
+				loc=getLocation(cursor, result.City, result.Address) )
+	db.commit()
 	db.close()
 		
 if __name__ == '__main__':
