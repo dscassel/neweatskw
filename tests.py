@@ -27,10 +27,9 @@ class DBTests( unittest.TestCase ):
 		expected_calls = [
 			call("SELECT * FROM facilities WHERE id=?;", ('someID',)),
 			call('''
-			INSERT INTO facilities (id, name, lastupdate, creation, address)
-				VALUES ( ?, ?, ?, ?, ? );''', 
-				('someID', 'Test facility', default_date, default_date, '123 King St E'))]
-
+			INSERT INTO facilities (id, name, lastupdate, creation, address, city)
+				VALUES ( ?, ?, ?, ?, ?, ? );''', 
+					('someID', 'Test facility', default_date, default_date, '123 King St E', 'WATERLOO'))]
 		self.cursor.execute.assert_has_calls( expected_calls )
 		
 	@patch('parsefacilities.datetime.datetime')
