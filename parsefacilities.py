@@ -109,6 +109,11 @@ def getLocation( cursor, address, city ):
 		return lat, lng
 	return row
 
+def storeKey( cursor, key, secret ):
+	cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('twitter.access_key', ?);", key)
+	cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('twitter.access_secret', ?);", secret)
+
+
 def main():
 	import argparse
 	parser = argparse.ArgumentParser()
@@ -119,7 +124,11 @@ def main():
 		help="File to obtain data from (default: testdata/Facilities_OpenData.csv")
 	parser.add_argument("--getrecent", metavar="N", action="store", type=int, 
 		help="Return informaiton on the N restaurants discovered in the last N days")
+	parser.add_argument("--authorize", action="store_true",
+		help="Authorize this script to update your Twitter account.")
+	
 	args = parser.parse_args()
+
 	# Track whether we need to create the DB or not.
 	noDB = not os.path.exists( 'restaurants.db' )
 	db = sqlite3.connect( 'restaurants.db' )
@@ -135,6 +144,10 @@ def main():
 		for facility in getFacilities(args.datasource):
 			addToDB( cursor, facility )
 	db.commit()
+
+	if args.authorize:
+		(key, secret) = tweeteats.authorize()
+		storeKey(cursor, key, secret)
 
 	if args.getrecent:
 		for result in getRecent( cursor, args.getrecent ):
