@@ -58,7 +58,8 @@ def createDB( cursor):
 	cursor.execute("CREATE TABLE facilities (id, name, lastupdate, creation, address, city );")
 	cursor.execute("CREATE TABLE settings (key, value);")
 	cursor.execute("CREATE TABLE locations (city, address, latitude, longitude );")
-	cursor.execute("INSERT INTO settings VALUES ('version', 2);")
+	cursor.execute("CREATE TABLE queue (facilities_id);")
+	cursor.execute("INSERT INTO settings VALUES ('version', 3);")
 
 
 def tryUpgradeDB( cursor ):
@@ -87,6 +88,9 @@ CREATE TABLE facilities_new AS
 		cursor.execute("UPDATE settings SET value = 2 WHERE key = 'version';")
 	if version < 2:
 		cursor.execute("CREATE TABLE locations (city, address, latitude, longitude );")
+
+	if version < 3:
+		cursor.execute("CREATE TABLE queue (facilities_id);")
 
 
 def getRecent( cursor, ndays = 7 ):
@@ -128,6 +132,8 @@ def main():
 		help="Return informaiton on the N restaurants discovered in the last N days")
 	parser.add_argument("--authorize", action="store_true",
 		help="Authorize this script to update your Twitter account.")
+	parser.add_argument("--enqueue", action="store_true",
+		help="For --getrecent, store the recent additions in the database.")
 	
 	args = parser.parse_args()
 
@@ -141,7 +147,7 @@ def main():
 		db.commit()
 	else:
 		tryUpgradeDB( cursor )
-
+	
 	if args.update:
 		for facility in getFacilities(args.datasource):
 			addToDB( cursor, facility )
