@@ -8,6 +8,8 @@ from collections import namedtuple
 import urllib
 import json
 
+import tweeteats
+
 
 Facility = namedtuple('Facility', ['ID', 'Name', 'LastUpdate', 'Created', 'Address', 'City'] )
 
@@ -110,8 +112,8 @@ def getLocation( cursor, address, city ):
 	return row
 
 def storeKey( cursor, key, secret ):
-	cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('twitter.access_key', ?);", key)
-	cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('twitter.access_secret', ?);", secret)
+	cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('twitter.access_key', ?);", [key])
+	cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('twitter.access_secret', ?);", [secret])
 
 
 def main():
