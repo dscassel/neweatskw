@@ -55,7 +55,12 @@ def addToDB(cursor, details):
     
 	
 def createDB( cursor):
-	cursor.execute("CREATE TABLE facilities (id, name, lastupdate, creation, address, city );")
+	cursor.execute("""
+		CREATE TABLE facilities (
+			id PRIMARY KEY ON CONFLICT REPLACE, 
+			name, lastupdate, creation, address, city 
+		);
+		""")
 	cursor.execute("CREATE TABLE settings (key, value);")
 	cursor.execute("CREATE TABLE locations (city, address, latitude, longitude );")
 	cursor.execute("CREATE TABLE queue (facilities_id);")
@@ -90,6 +95,7 @@ CREATE TABLE facilities_new AS
 		cursor.execute("CREATE TABLE locations (city, address, latitude, longitude );")
 
 	if version < 3:
+		cursor.execute("CREATE TABLE facilities_new PRIMARY KEY (id, name, lastupdate, creation);")
 		cursor.execute("CREATE TABLE queue (facilities_id);")
 
 
@@ -162,6 +168,7 @@ def main():
 			print "{name}: {address}, {city} ({loc})".format( 
 				name=result.Name, address=result.Address, city=result.City, 
 				loc=getLocation(cursor, result.City, result.Address) )
+			cursor.execute(
 	db.commit()
 	db.close()
 		
