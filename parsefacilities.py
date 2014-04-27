@@ -61,7 +61,7 @@ def createDB( cursor):
 			name, lastupdate, creation, address, city 
 		);
 		""")
-	cursor.execute("CREATE TABLE settings (key, value);")
+	cursor.execute("CREATE TABLE settings (key PRIMARY KEY ON CONFLICT REPLACE, value);")
 	cursor.execute("CREATE TABLE locations (city, address, latitude, longitude );")
 	cursor.execute("CREATE TABLE queue (facilities_id);")
 	cursor.execute("INSERT INTO settings VALUES ('version', 3);")
@@ -86,8 +86,10 @@ def tryUpgradeDB( cursor ):
 		cursor.execute("ALTER TABLE facilities ADD COLUMN city;")
 	elif version == 1:
 		cursor.execute("""
-CREATE TABLE facilities_new AS 
-	SELECT id, name, lastseen as lastupdate, firstseen as creation, NULL as address, NULL as city FROM facilities;""")
+		CREATE TABLE facilities_new AS 
+		    SELECT id, name, lastseen as lastupdate, 
+			firstseen as creation, NULL as address, 
+			NULL as city FROM facilities;""")
 		cursor.execute("DROP TABLE facilities;")
 		cursor.execute("ALTER TABLE facilities_new RENAME TO facilities;")
 		cursor.execute("UPDATE settings SET value = 2 WHERE key = 'version';")
@@ -95,7 +97,20 @@ CREATE TABLE facilities_new AS
 		cursor.execute("CREATE TABLE locations (city, address, latitude, longitude );")
 
 	if version < 3:
-		cursor.execute("CREATE TABLE facilities_new PRIMARY KEY (id, name, lastupdate, creation);")
+		cursor.execute("""
+		CREATE TABLE facilities_new (
+		    id PRIMARY KEY ON CONFLICT REPLACE, 
+		    name, lastupdate, creation);
+		""")
+		cursor.execute("INSERT INTO facilities_new SELECT id, name, lastupdate, creation FROM facilities;")
+		cursor.execute("DROP TABLE facilities;")
+		cursor.execute("ALTER TABLE facilities_new RENAME TO facilities;")
+
+		cursor.execute("CREATE TABLE settings_new (key PRIMARY KEY ON CONFLICT REPLACE, value);")
+		cursor.execute("INSERT INTO settings_new SELECT key, value FROM settings;")
+		cursor.execute("DROP TABLE settings;"
+		cursor.execute("ALTER TABLE settings_new RENAME TO settings;")
+		
 		cursor.execute("CREATE TABLE queue (facilities_id);")
 
 

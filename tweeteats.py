@@ -3,7 +3,7 @@
 import tweepy
 import config_twitter
 
-auth = tweepy.OAuthHandler(config_twitter.API_CONSUMER_KEY, config_twitter.API_SECRET)
+auth = tweepy.OAuthHandler(config_twitter.API_CONSUMER_KEY, config_twitter.API_SECRET, secure=True)
 
 def authorize():
     redirect_url = auth.get_authorization_url()
