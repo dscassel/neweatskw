@@ -4,14 +4,10 @@ import csv
 import sqlite3
 import os
 import datetime
-from collections import namedtuple
-import urllib
-import json
-
-import tweeteats
+import dbhandler
+import location
 
 
-Facility = namedtuple('Facility', ['ID', 'Name', 'LastUpdate', 'Created', 'Address', 'City'] )
 
 def getFacilities(datasource):
 	facilities = csv.DictReader(datasource)
@@ -53,93 +49,6 @@ def addToDB(cursor, details):
 				( datetime.datetime.now(), 
 					details['ID']) )
     
-	
-def createDB( cursor):
-	cursor.execute("""
-		CREATE TABLE facilities (
-			id PRIMARY KEY ON CONFLICT REPLACE, 
-			name, lastupdate, creation, address, city 
-		);
-		""")
-	cursor.execute("CREATE TABLE settings (key PRIMARY KEY ON CONFLICT REPLACE, value);")
-	cursor.execute("CREATE TABLE locations (city, address, latitude, longitude );")
-	cursor.execute("CREATE TABLE queue (facilities_id);")
-	cursor.execute("INSERT INTO settings VALUES ('version', 3);")
-
-
-def tryUpgradeDB( cursor ):
-
-	try:
-		cursor.execute("SELECT value from settings WHERE key = 'version';");
-		row = cursor.fetchone()
-		version = row[0]
-
-		
-	except sqlite3.OperationalError as ex:
-		version = 0
-
-	if version == 0:
-		print ("Original database detected; upgrading")
-		cursor.execute("CREATE TABLE settings (key, value);")
-		cursor.execute("INSERT INTO settings VALUES ('version', 2);")
-		cursor.execute("ALTER TABLE facilities ADD COLUMN address;")
-		cursor.execute("ALTER TABLE facilities ADD COLUMN city;")
-	elif version == 1:
-		cursor.execute("""
-		CREATE TABLE facilities_new AS 
-		    SELECT id, name, lastseen as lastupdate, 
-			firstseen as creation, NULL as address, 
-			NULL as city FROM facilities;""")
-		cursor.execute("DROP TABLE facilities;")
-		cursor.execute("ALTER TABLE facilities_new RENAME TO facilities;")
-	if version < 2:
-		cursor.execute("CREATE TABLE locations (city, address, latitude, longitude );")
-
-	if version < 3:
-		cursor.execute("""
-		CREATE TABLE facilities_new (
-		    id PRIMARY KEY ON CONFLICT REPLACE, 
-		    name, lastupdate, creation);
-		""")
-		cursor.execute("INSERT INTO facilities_new SELECT id, name, lastupdate, creation FROM facilities;")
-		cursor.execute("DROP TABLE facilities;")
-		cursor.execute("ALTER TABLE facilities_new RENAME TO facilities;")
-
-		cursor.execute("CREATE TABLE settings_new (key PRIMARY KEY ON CONFLICT REPLACE, value);")
-		cursor.execute("INSERT INTO settings_new SELECT key, value FROM settings;")
-		cursor.execute("DROP TABLE settings;")
-		cursor.execute("ALTER TABLE settings_new RENAME TO settings;")
-		
-		cursor.execute("CREATE TABLE queue (facilities_id);")
-		cursor.execute("UPDATE settings SET value = 3 WHERE key = 'version';")
-
-
-def getRecent( cursor, ndays = 7 ):
-	cursor.execute("SELECT * FROM facilities WHERE creation > date('now','-{ndays} days')".format( ndays=float(ndays) ))
-	for row in cursor.fetchall():
-		yield Facility( *row )
-
-def getLocation( cursor, address, city ):
-	cursor.execute("SELECT latitude, longitude FROM locations WHERE city = ? AND address = ?", (city, address) )
-	row = cursor.fetchone()
-	if row is None:
-		# We don't have a location for this address; look one up via Google
-		fulladdress = "{address}, {city}, Ontario, Canada".format( address=address, city=city)
-		rawdata = urllib.urlopen( 
-			"http://maps.googleapis.com/maps/api/geocode/json?address={}&sensor=false".format( 
-				urllib.quote( fulladdress ) ) ).read()
-		data = json.loads( rawdata )
-		location = data['results'][0]['geometry']['location']
-		lat, lng = location['lat'], location['lng']
-		cursor.execute("INSERT INTO locations (city, address, latitude, longitude) VALUES (?,?,?,?);",
-			(city, address, lat, lng))
-		return lat, lng
-	return row
-
-def storeKey( cursor, key, secret ):
-	cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('twitter.access_key', ?);", [key])
-	cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('twitter.access_secret', ?);", [secret])
-
 
 def main():
 	import argparse
@@ -151,8 +60,6 @@ def main():
 		help="File to obtain data from (default: testdata/Facilities_OpenData.csv")
 	parser.add_argument("--getrecent", metavar="N", action="store", type=int, 
 		help="Return informaiton on the N restaurants discovered in the last N days")
-	parser.add_argument("--authorize", action="store_true",
-		help="Authorize this script to update your Twitter account.")
 	parser.add_argument("--enqueue", action="store_true",
 		help="For --getrecent, store the recent additions in the database.")
 	
@@ -164,25 +71,24 @@ def main():
 	cursor = db.cursor()
 	
 	if noDB:
-		createDB( cursor )
+		dbhandler.createDB( cursor )
 		db.commit()
 	else:
-		tryUpgradeDB( cursor )
+		dbhandler.tryUpgradeDB( cursor )
 	
 	if args.update:
 		for facility in getFacilities(args.datasource):
 			addToDB( cursor, facility )
 	db.commit()
 
-	if args.authorize:
-		(key, secret) = tweeteats.authorize()
-		storeKey(cursor, key, secret)
-
 	if args.getrecent:
-		for result in getRecent( cursor, args.getrecent ):
+		for result in dbhandler.getRecent( cursor, args.getrecent ):
 			print "{name}: {address}, {city} ({loc})".format( 
 				name=result.Name, address=result.Address, city=result.City, 
-				loc=getLocation(cursor, result.City, result.Address) )
+				loc=location.getLocation(cursor, result.City, result.Address) )
+
+			if args.enqueue:
+				cursor.execute( "INSERT INTO queue (facilities_id) VALUES ( ? );", (result.ID) )
 			
 	db.commit()
 	db.close()
