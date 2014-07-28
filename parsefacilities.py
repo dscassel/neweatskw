@@ -92,7 +92,6 @@ def tryUpgradeDB( cursor ):
 			NULL as city FROM facilities;""")
 		cursor.execute("DROP TABLE facilities;")
 		cursor.execute("ALTER TABLE facilities_new RENAME TO facilities;")
-		cursor.execute("UPDATE settings SET value = 2 WHERE key = 'version';")
 	if version < 2:
 		cursor.execute("CREATE TABLE locations (city, address, latitude, longitude );")
 
@@ -108,10 +107,11 @@ def tryUpgradeDB( cursor ):
 
 		cursor.execute("CREATE TABLE settings_new (key PRIMARY KEY ON CONFLICT REPLACE, value);")
 		cursor.execute("INSERT INTO settings_new SELECT key, value FROM settings;")
-		cursor.execute("DROP TABLE settings;"
+		cursor.execute("DROP TABLE settings;")
 		cursor.execute("ALTER TABLE settings_new RENAME TO settings;")
 		
 		cursor.execute("CREATE TABLE queue (facilities_id);")
+		cursor.execute("UPDATE settings SET value = 3 WHERE key = 'version';")
 
 
 def getRecent( cursor, ndays = 7 ):
@@ -183,9 +183,9 @@ def main():
 			print "{name}: {address}, {city} ({loc})".format( 
 				name=result.Name, address=result.Address, city=result.City, 
 				loc=getLocation(cursor, result.City, result.Address) )
-			cursor.execute(
+			
 	db.commit()
 	db.close()
-		
+
 if __name__ == '__main__':
 	main()
