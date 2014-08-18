@@ -88,7 +88,7 @@ def main():
 				loc=location.getLocation(cursor, result.City, result.Address) )
 
 			if args.enqueue:
-				cursor.execute( "INSERT INTO queue (facilities_id) VALUES ( ? );", (result.ID) )
+				cursor.execute( "INSERT INTO queue (facilities_id) VALUES ( ? );", [(result.ID)] )
 			
 	db.commit()
 	db.close()

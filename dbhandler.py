@@ -48,7 +48,7 @@ def tryUpgradeDB( cursor ):
 		cursor.execute("""
 		CREATE TABLE facilities_new (
 		    id PRIMARY KEY ON CONFLICT REPLACE, 
-		    name, lastupdate, creation);
+		    name, lastupdate, creation, address, city);
 		""")
 		cursor.execute("INSERT INTO facilities_new SELECT id, name, lastupdate, creation FROM facilities;")
 		cursor.execute("DROP TABLE facilities;")
@@ -68,9 +68,24 @@ def storeKey( cursor, key, secret ):
 	cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('twitter.access_key', ?);", [key])
 	cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('twitter.access_secret', ?);", [secret])
 
+def getKey( cursor ):
+	cursor.execute("SELECT value FROM settings WHERE key = 'twitter.access_key';")
+	keyRow = cursor.fetchone()
+
+	cursor.execute("SELECT value FROM settings WHERE key = 'twitter.access_secret';")
+	secretRow = cursor.fetchone();
+
+	return ( keyRow[0], secretRow[0] )
 
 def getRecent( cursor, ndays = 7 ):
 	cursor.execute("SELECT * FROM facilities WHERE creation > date('now','-{ndays} days')".format( ndays=float(ndays) ))
 	for row in cursor.fetchall():
 		yield Facility( *row )
+
+def getTopOfQueue( cursor ):
+	
+	cursor.execute("SELECT facilities.* FROM queue, facilities WHERE facilities.ID = queue.facilities_id;") 
+
+	row = cursor.fetchone()
+	return Facility(*row)
 
