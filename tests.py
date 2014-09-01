@@ -1,7 +1,11 @@
 import unittest
 import parsefacilities
+import dbhandler
+import tweeteats
 from mock import Mock, call, patch
 import datetime 
+
+
 class DBTests( unittest.TestCase ):
 	def setUp(self):
 		self.details = { 
@@ -62,6 +66,20 @@ class DBTests( unittest.TestCase ):
 
 		self.assertEqual( 0, self.cursor.fetchone.call_count )
 		self.assertEqual( 0, self.cursor.execute.call_count )
+
+class tweetTests(unittest.TestCase):
+
+	def test_tweetmessage( self ):
+		newRestaurant = dbhandler.Facility('blah', 'NEW RESTAURANT', 'blah', 'blah', '123 King St N', 'WATERLOO')
+		message = tweeteats.getMessage(newRestaurant)
+
+		self.assertEqual( 'NEW RESTAURANT: 123 King St N, WATERLOO', message )
+
+	def test_tweetNKFM( self ):
+		newRestaurant = dbhandler.Facility('blah', 'NKFM-NEW RESTAURANT', 'blah', 'blah', '300 KING ST E', 'KITCHENER')
+		message = tweeteats.getMessage(newRestaurant)
+
+		self.assertEqual( "NEW RESTAURANT (Kitchener Farmer's Market): 300 KING ST E, KITCHENER", message )
 
 
 if __name__ == '__main__':

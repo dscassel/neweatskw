@@ -6,6 +6,7 @@ import sqlite3
 import dbhandler
 import location
 import os
+import re
 
 auth = tweepy.OAuthHandler(config_twitter.API_CONSUMER_KEY, config_twitter.API_SECRET, secure=True)
 #auth = tweepy.auth.BasicAuthHandler(config_twitter.USER, config_twitter.PASSWORD, secure=True)
@@ -30,16 +31,27 @@ def tweet( message, latitude, longitude ):
 def tweetTopOfQueue(cursor):
 	newRestaurant = dbhandler.getTopOfQueue(cursor)
 
-	message = "{name}: {address}, {city}".format( 
-		name = newRestaurant.Name, 
-		address = newRestaurant.Address, 
-		city = newRestaurant.City)
-
+	message = getMessage(newRestaurant)
 	loc = location.getLocation(cursor, newRestaurant.Address, newRestaurant.City)
-
 
 	tweet( message, *loc )
 
+	dbhandler.deleteFromQueue(cursor, newRestaurant)
+
+def getMessage(newRestaurant):
+
+	nkfmNameRE = re.compile("^NKFM-(.*)$")
+	restoName = newRestaurant.Name
+	search = nkfmNameRE.search(restoName)
+	if search:
+		restoName = "{name} (Kitchener Farmer's Market)".format(name=search.group(1))
+
+	message = "{name}: {address}, {city}".format( 
+		name = restoName,
+		address = newRestaurant.Address, 
+		city = newRestaurant.City)
+
+	return message
 
 def main():
 	import argparse

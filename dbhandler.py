@@ -89,3 +89,6 @@ def getTopOfQueue( cursor ):
 	row = cursor.fetchone()
 	return Facility(*row)
 
+def deleteFromQueue( cursor, facility ):
+	cursor.execute("DELETE FROM facilities WHERE facilities_id = ?;" [facility.ID])
+
