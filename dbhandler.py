@@ -90,5 +90,5 @@ def getTopOfQueue( cursor ):
 	return Facility(*row)
 
 def deleteFromQueue( cursor, facility ):
-	cursor.execute("DELETE FROM facilities WHERE facilities_id = ?;" [facility.ID])
+	cursor.execute("DELETE FROM facilities WHERE facilities_id = ?;", [facility.ID])
 
