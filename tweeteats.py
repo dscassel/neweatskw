@@ -34,7 +34,7 @@ def tweetTopOfQueue(cursor):
 	message = getMessage(newRestaurant)
 	loc = location.getLocation(cursor, newRestaurant.Address, newRestaurant.City)
 
-	tweet( message, *loc )
+	#tweet( message, *loc )
 
 	dbhandler.deleteFromQueue(cursor, newRestaurant)
 
@@ -58,11 +58,14 @@ def main():
 	parser = argparse.ArgumentParser()
 	
 	parser.add_argument("--authorize", action="store_true",
-	help="Authorize this script to update your Twitter account.")
+		help="Authorize this script to update your Twitter account.")
+	parser.add_argument("--database", type=dbhandler.dbArgType,
+		default='restaurants.db',
+		help="SQLite database file for storing updates")
 
 	args = parser.parse_args()
 
-	db = sqlite3.connect( 'restaurants.db' )
+	db = args.database
 	cursor = db.cursor()
 
 	if args.authorize:
@@ -71,10 +74,12 @@ def main():
 		dbhandler.storeKey(cursor, key, secret)
 	else:
 		(key, secret) = dbhandler.getKey(cursor)
-		print (key, secret)
 		initialize(key, secret)
 
 		tweetTopOfQueue(cursor)
+	
+	db.commit()
+	db.close()
     
 if __name__ == "__main__":
 	main()

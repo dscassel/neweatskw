@@ -1,5 +1,6 @@
 import sqlite3
 from collections import namedtuple
+import os
 
 Facility = namedtuple('Facility', ['ID', 'Name', 'LastUpdate', 'Created', 'Address', 'City'] )
 	
@@ -84,11 +85,26 @@ def getRecent( cursor, ndays = 7 ):
 
 def getTopOfQueue( cursor ):
 	
-	cursor.execute("SELECT facilities.* FROM queue, facilities WHERE facilities.ID = queue.facilities_id;") 
+	cursor.execute("SELECT facilities.* FROM facilities, queue WHERE facilities.ID = queue.facilities_id;") 
 
 	row = cursor.fetchone()
 	return Facility(*row)
 
 def deleteFromQueue( cursor, facility ):
-	cursor.execute("DELETE FROM facilities WHERE facilities_id = ?;", [facility.ID])
+	print facility.ID
+	cursor.execute("DELETE FROM queue WHERE facilities_id = ?;", [facility.ID])
 
+def dbArgType(fileName):
+	
+	# Track whether we need to create the DB or not.
+	noDB = not os.path.exists( fileName )
+	db = sqlite3.connect( fileName )
+	cursor = db.cursor()
+	
+	if noDB:
+		createDB( cursor )
+		db.commit()
+	else:
+		tryUpgradeDB( cursor )
+
+	return db

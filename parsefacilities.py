@@ -2,7 +2,6 @@
 
 import csv
 import sqlite3
-import os
 import datetime
 import dbhandler
 import location
@@ -58,24 +57,19 @@ def main():
 	parser.add_argument("--datasource", type=argparse.FileType('rt'), 
 		default=open('testdata/Facilities_OpenData.csv', 'rt'), 
 		help="File to obtain data from (default: testdata/Facilities_OpenData.csv")
+	parser.add_argument("--database", type=dbhandler.dbArgType,
+		default='restaurants.db',
+		help="SQLite database file for storing updates")
 	parser.add_argument("--getrecent", metavar="N", action="store", type=int, 
 		help="Return informaiton on the N restaurants discovered in the last N days")
 	parser.add_argument("--enqueue", action="store_true",
 		help="For --getrecent, store the recent additions in the database.")
 	
 	args = parser.parse_args()
-
-	# Track whether we need to create the DB or not.
-	noDB = not os.path.exists( 'restaurants.db' )
-	db = sqlite3.connect( 'restaurants.db' )
+	
+	db = args.database
 	cursor = db.cursor()
-	
-	if noDB:
-		dbhandler.createDB( cursor )
-		db.commit()
-	else:
-		dbhandler.tryUpgradeDB( cursor )
-	
+
 	if args.update:
 		for facility in getFacilities(args.datasource):
 			addToDB( cursor, facility )
