@@ -22,7 +22,9 @@ def getFacilities(datasource):
 		yield details
 
 def restaurantRecognizer( s ):
-	return  'Restaurant' in s or 'Food Take Out' in s
+	return  'Restaurant' in s 
+		or 'Food Take Out' in s 
+		or "Food, General - Bakery - Production" in s
 
 def addToDB(cursor, details):
 	if restaurantRecognizer( details['Type'] ) \
