@@ -34,7 +34,7 @@ def tweetTopOfQueue(cursor):
 	message = getMessage(newRestaurant)
 	loc = location.getLocation(cursor, newRestaurant.Address, newRestaurant.City)
 
-	#tweet( message, *loc )
+	tweet( message, *loc )
 
 	dbhandler.deleteFromQueue(cursor, newRestaurant)
 
