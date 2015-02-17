@@ -6,6 +6,23 @@ from mock import Mock, call, patch
 import datetime 
 
 
+class DBHelperMethodTests( unittest.TestCase ):
+	def test_restaurantRecognizerTrue(self):
+		assertTrue(parsefacilities.restaurantRecognizer( ['Food, General - Restaurant'] ))
+
+		assertTrue(parsefacilities.restaurantRecognizer( ['Food, General - Food Take Out'] ))
+
+	def test_restaurantRecognizerFalse(self):
+		assertTrue(parsefacilities.restaurantRecognizer( ['Food, General - Supermarket'] ))
+
+	def test_cityRecognizerTrue(self):
+		assertTrue(parsefacilities.restaurantRecognizer( ['Restaurant'] ))
+
+		assertTrue(parsefacilities.restaurantRecognizer( ['Food Take Out'] ))
+
+	def test_cityRecognizerFalse(self):
+		assertTrue(parsefacilities.restaurantRecognizer( ['Restaurant'] ))
+
 class DBTests( unittest.TestCase ):
 	def setUp(self):
 		self.details = { 

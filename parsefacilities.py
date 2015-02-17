@@ -4,7 +4,7 @@ import csv
 import sqlite3
 import datetime
 import dbhandler
-import location
+#import location
 
 
 
@@ -24,10 +24,11 @@ def getFacilities(datasource):
 def restaurantRecognizer( s ):
 	return  'Restaurant' in s or 'Food Take Out' in s or "Food, General - Bakery - Production" in s
 
-def addToDB(cursor, details):
-	if restaurantRecognizer( details['Type'] ) \
-		and details['City'] in ('WATERLOO', 'KITCHENER', 'ST.+JACOBS'):
+def cityRecognizer( c ):
+	return c in ('WATERLOO', 'KITCHENER', 'ST.+JACOBS')
 
+def addToDB(cursor, details):
+	if restaurantRecognizer( details['Type'] ) and cityRecognizer( details['City'] ):
 		cursor.execute("SELECT * FROM facilities WHERE id=?;", (details['ID'],))
 
 		if cursor.fetchone() is None:
@@ -78,8 +79,8 @@ def main():
 	if args.getrecent:
 		for result in dbhandler.getRecent( cursor, args.getrecent ):
 			print "{name}: {address}, {city} ({loc})".format( 
-				name=result.Name, address=result.Address, city=result.City, 
-				loc=location.getLocation(cursor, result.City, result.Address) )
+				name=result.Name, address=result.Address, city=result.City, loc='blah')
+				#loc=location.getLocation(cursor, result.City, result.Address) )
 
 			if args.enqueue:
 				cursor.execute( "INSERT INTO queue (facilities_id) VALUES ( ? );", [(result.ID)] )
