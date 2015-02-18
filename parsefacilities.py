@@ -4,7 +4,7 @@ import csv
 import sqlite3
 import datetime
 import dbhandler
-#import location
+import location
 
 
 
@@ -79,8 +79,8 @@ def main():
 	if args.getrecent:
 		for result in dbhandler.getRecent( cursor, args.getrecent ):
 			print "{name}: {address}, {city} ({loc})".format( 
-				name=result.Name, address=result.Address, city=result.City, loc='blah')
-				#loc=location.getLocation(cursor, result.City, result.Address) )
+				name=result.Name, address=result.Address, city=result.City,
+				loc=location.getLocation(cursor, result.City, result.Address) )
 
 			if args.enqueue:
 				cursor.execute( "INSERT INTO queue (facilities_id) VALUES ( ? );", [(result.ID)] )
