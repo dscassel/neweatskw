@@ -6,6 +6,42 @@ from mock import Mock, call, patch
 import datetime 
 
 
+class ParseFacilitiesTests( unittest.TestCase ):
+	def test_restaurantRecognizerTrue(self):
+		self.assertTrue(parsefacilities.restaurantRecognizer( 'Food, General - Restaurant' ))
+
+		self.assertTrue(parsefacilities.restaurantRecognizer( 'Food, General - Food Take Out' ))
+
+		self.assertTrue(parsefacilities.restaurantRecognizer( 'Food, General - Bakery - Production' ))
+
+	def test_restaurantRecognizerFalse(self):
+		self.assertFalse(parsefacilities.restaurantRecognizer( 'Food, General - Supermarket' ))
+
+	def test_cityRecognizerTrue(self):
+		self.assertTrue(parsefacilities.cityRecognizer( 'WATERLOO' ))
+
+		self.assertTrue(parsefacilities.cityRecognizer( 'KITCHENER' ))
+
+	def test_cityRecognizerFalse(self):
+		self.assertFalse(parsefacilities.cityRecognizer( 'AUCKLAND' ))
+
+	def test_getFacilities(self):
+		test_csv_entries = open('testdata/DBHelper_TestData.csv')
+		entries = [i for i in parsefacilities.getFacilities(test_csv_entries)]
+
+		flying_squirrel_cafe = entries[0]
+		alligator_pies = entries[1]
+
+		self.assertEqual( 'Food, General - Restaurant', flying_squirrel_cafe['Type'])
+		self.assertEqual('WATERLOO', flying_squirrel_cafe['City'])
+		self.assertEqual('321 QUEEN ST N', flying_squirrel_cafe['Address'])
+		self.assertEqual('FLYING SQUIRREL CAFE', flying_squirrel_cafe['Name'])
+
+		self.assertEqual( 'Food, General - Bakery - Production', alligator_pies['Type'])
+		self.assertEqual('KITCHENER', alligator_pies['City'])
+		self.assertEqual('123 KING ST', alligator_pies['Address'])
+		self.assertEqual('ALLIGATOR PIES', alligator_pies['Name'])
+
 class DBTests( unittest.TestCase ):
 	def setUp(self):
 		self.details = { 
