@@ -1,5 +1,7 @@
 #!/bin/bash
 
+mv testdata/Facilities_OpenData.csv testdata/Facilities_OpenData_`date --iso-8601`.csv
+
 wget http://www.regionofwaterloo.ca/opendatadownloads/Inspections.zip -O /tmp/Inspections.zip
 unzip -o /tmp/Inspections.zip -d testdata
 

@@ -8,7 +8,7 @@ import location
 import os
 import re
 
-auth = tweepy.OAuthHandler(config_twitter.API_CONSUMER_KEY, config_twitter.API_SECRET, secure=True)
+auth = tweepy.OAuthHandler(config_twitter.API_CONSUMER_KEY, config_twitter.API_SECRET)
 #auth = tweepy.auth.BasicAuthHandler(config_twitter.USER, config_twitter.PASSWORD, secure=True)
 
 def authorize():
