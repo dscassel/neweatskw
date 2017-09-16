@@ -13,21 +13,21 @@ def getFacilities(datasource):
 
 	for place in facilities:
 		details = {
-			'Type': place['DESCRIPTION'],
-			'City': place['CITY'],
+			'Type': place['SUBCATEGORY'],
+			'City': place['CITY'].upper(),
 			'Address': place['ADDR'],
-			'ID': place['FACILITYID'],
+			'ID': place['FACILITYID'].upper(),
 			'Name': place['BUSINESS_NAME']
 		}
 		yield details
 
 def restaurantRecognizer( s ):
-	return  'Restaurant' in s or 'Food Take Out' in s or "Food, General - Bakery - Production" in s
+	return  'Restaurant' in s or 'Food Take Out' in s or 'Baked Goods - Retail' in s or 'Ice Cream / Yogurt Vendor' in s
 
 def cityRecognizer( c ):
 	return c in ('WATERLOO', 'KITCHENER', 'ST.+JACOBS')
 
-def addToDB(cursor, details):
+def addToDB(cursor, details, date):
 	if restaurantRecognizer( details['Type'] ) and cityRecognizer( details['City'] ):
 		cursor.execute("SELECT * FROM facilities WHERE id=?;", (details['ID'],))
 
@@ -38,17 +38,22 @@ def addToDB(cursor, details):
 				VALUES ( ?, ?, ?, ?, ?, ? );''', 
 				(details['ID'], 
 				details['Name'], 
-				datetime.datetime.now(),
-				datetime.datetime.now(),
+				date,
+				date,
 				details['Address'],
 				details['City']))
 			
 		else:
 			print "Updating time on {}".format( details['Name'])
 			cursor.execute( "UPDATE facilities SET lastupdate = ? WHERE id = ?;", 
-				( datetime.datetime.now(), 
-					details['ID']) )
-    
+				( date, details['ID']) )
+
+def valid_date(s):
+    try:
+        return datetime.datetime.strptime(s, "%Y-%m-%d")
+    except ValueError:
+        msg = "Not a valid date: '{0}'.".format(s)
+        raise argparse.ArgumentTypeError(msg)    
 
 def main():
 	import argparse
@@ -65,15 +70,23 @@ def main():
 		help="Return informaiton on the N restaurants discovered in the last N days")
 	parser.add_argument("--enqueue", action="store_true",
 		help="For --getrecent, store the recent additions in the database.")
+	parser.add_argument("--date", type=valid_date, 
+		help="The date of the update - format YYYY-MM-DD") 
+                    
 	
 	args = parser.parse_args()
 	
 	db = args.database
 	cursor = db.cursor()
 
+	if args.date:
+		date = datetime.date(args.date.year, args.date.month, args.date.day)
+	else:
+		date = datetime.date.today()
+
 	if args.update:
 		for facility in getFacilities(args.datasource):
-			addToDB( cursor, facility )
+			addToDB( cursor, facility, date )
 	db.commit()
 
 	if args.getrecent:
