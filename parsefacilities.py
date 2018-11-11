@@ -11,12 +11,13 @@ def getFacilities(datasource):
 
 	for place in facilities:
 		details = {
-			'Type': place['SUBCATEGORY'],
-			'City': place['CITY'].upper(),
-			'Address': place['ADDR'],
-			'ID': place['FACILITYID'].upper(),
-			'Name': place['BUSINESS_NAME']
+			'Type': place['SUBCATEGORY'].decode('latin-1'),
+			'City': place['CITY'].upper().decode('latin-1'),
+			'Address': place['ADDR'].decode('latin-1'),
+			'ID': place['FACILITYID'].upper().decode('latin-1'),
+			'Name': place['BUSINESS_NAME'].decode('latin-1')
 		}
+		
 		yield details
 
 def restaurantRecognizer( s ):
@@ -30,7 +31,7 @@ def addToDB(cursor, details, date):
 		cursor.execute("SELECT * FROM facilities WHERE id=?;", (details['ID'],))
 
 		if cursor.fetchone() is None:
-			print str.format("{Name}: {Address}, {City}", **details )
+			print u"{Name}: {Address}, {City}".format(**details)
 			cursor.execute('''
 			INSERT INTO facilities (id, name, lastupdate, creation, address, city)
 				VALUES ( ?, ?, ?, ?, ?, ? );''', 
