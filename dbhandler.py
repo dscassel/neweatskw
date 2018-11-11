@@ -79,7 +79,7 @@ def getKey( cursor ):
 	return ( keyRow[0], secretRow[0] )
 
 def getRecent( cursor, ndays = 7 ):
-	cursor.execute("SELECT * FROM facilities WHERE creation > date('now','-{ndays} days')".format( ndays=float(ndays) ))
+	cursor.execute("SELECT * FROM facilities WHERE creation >= date('now','-{ndays} days')".format( ndays=float(ndays) ))
 	for row in cursor.fetchall():
 		yield Facility( *row )
 

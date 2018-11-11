@@ -4,7 +4,6 @@ import tweepy
 import config_twitter
 import sqlite3
 import dbhandler
-import location
 import os
 import re
 
@@ -24,17 +23,16 @@ def authorize():
 def initialize(key, secret):
 	auth.set_access_token(key, secret)
 
-def tweet( message, latitude, longitude ):
+def tweet( message ):
 	api = tweepy.API(auth)
-	api.update_status(message, lat=latitude, long=longitude)
+	api.update_status(message)
 
 def tweetTopOfQueue(cursor):
 	newRestaurant = dbhandler.getTopOfQueue(cursor)
 
 	message = getMessage(newRestaurant)
-	loc = location.getLocation(cursor, newRestaurant.Address, newRestaurant.City)
 
-	tweet( message, *loc )
+	tweet( message )
 
 	dbhandler.deleteFromQueue(cursor, newRestaurant)
 
